@@ -1,6 +1,5 @@
 import csv
 from connection import session
-import ray
 import time
 from datetime import timedelta
 
@@ -9,7 +8,7 @@ def insert(allRatings):
         session.execute(line)
 
 print("Query = INS -> [ratings_by_date]")
-@ray.remote
+
 def getQuarterOfTable(quarter):
     allRatings1 = []
     rating = 'BEGIN BATCH '
@@ -24,18 +23,14 @@ def getQuarterOfTable(quarter):
 
 with open ('rating.csv', 'r', encoding='utf-8') as csv_file:
     csv_reader = list(csv.reader(csv_file, quoting = csv.QUOTE_ALL, delimiter = ','))
-    ray.init()
     st = time.time()
     print('Forming query...')
     allRatings = []
-    allRatings += ray.get(getQuarterOfTable.remote(csv_reader[1:5000066]))
-    allRatings += ray.get(getQuarterOfTable.remote(csv_reader[5000067: 10000133]))
-    allRatings += ray.get(getQuarterOfTable.remote(csv_reader[10000134: 15000199]))
-    allRatings += ray.get(getQuarterOfTable.remote(csv_reader[15000200:]))
+
+    allRatings += getQuarterOfTable(csv_reader)
     et = time.time()
 
 print (f'Forming query: Done. Time required: {str(timedelta(seconds = et - st))}')
-ray.shutdown()
 input("Press enter to start uploading")
 print('Upload in progress...')
 
