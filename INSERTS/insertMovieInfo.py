@@ -1,5 +1,5 @@
 import csv
-from connection import session, cons_level
+from bigDataConnect import session, cons_level
 from cassandra.query import BatchStatement
 import time
 from datetime import timedelta
@@ -10,8 +10,10 @@ st = time.time()
 with open ('movie.csv', 'r', encoding='utf-8') as csv_file:
     csv_reader = list(csv.reader(csv_file, quoting = csv.QUOTE_ALL, delimiter = ','))
 
-insert_movieInfo = session.prepare("INSERT INTO movie_info (movieid,title,avgrating,genres,tag,year) VALUES (?, ?, ?, ?, ?, ?)")
+insert_movieInfo = session.prepare("INSERT INTO movie_info(movieid,title,avgrating,genres,tag,year) VALUES (?, ?, ?, ?, ?, ?)")
 batch = BatchStatement()
+AllBatches = []
+y = 0
 
 for i in range(len(csv_reader)):
     if i == 0:
@@ -19,7 +21,7 @@ for i in range(len(csv_reader)):
     genres = set(csv_reader[i][2].split('|'))
     try:
         year = int(csv_reader[i][1].rsplit('(', 1)[1][0:4])       
-        title = csv_reader[i][1].rsplit('(', 1)[0][0:4].replace("'", "''")#title
+        title = csv_reader[i][1].rsplit('(', 1)[0].replace("'", "''")#title
     except:
         title = csv_reader[i][1].replace("'", "''")
         year = None
@@ -32,9 +34,23 @@ for i in range(len(csv_reader)):
     for n in x:
         tags.add(n.tag.replace("'", "''"))
     batch.add(insert_movieInfo, (id, title, avg, genres, tags, year))
+    y += 1
+    if y == 2000:
+        AllBatches.append(batch)
+        batch = BatchStatement()
+        y = 0
+
+AllBatches.append(batch)
+batch = BatchStatement()
+
 et = time.time()
 
 print (f'Forming query: Done. Time required: {str(timedelta(seconds = et - st))}')
+
 print('Uploading...')
-session.execute(batch)
+st = time.time()
+for l in AllBatches:
+    session.execute(l)
+
+et = time.time()
 print(f'Upload: Done. Time required: {str(timedelta(seconds = et - st))}')
