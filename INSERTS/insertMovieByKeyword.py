@@ -1,4 +1,4 @@
-from bigDataConnect import session, cons_level
+from connection import session, cons_level
 import csv 
 import time
 from datetime import timedelta

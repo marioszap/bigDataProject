@@ -1,5 +1,5 @@
 import csv
-from bigDataConnect import session, cons_level
+from connection import session, cons_level
 from cassandra.query import BatchStatement
 import time
 from datetime import timedelta
